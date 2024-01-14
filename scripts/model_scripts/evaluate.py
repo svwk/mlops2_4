@@ -51,11 +51,13 @@ if __name__ == "__main__":
     x_test = test_data.drop('Y', axis=1)
     y_test = test_data['Y']
 
+    clf.set_params(device="cpu")
     score = clf.score(x_test, y_test)
     preds = clf.predict(x_test)
     f1 = classification_report(y_test, preds, target_names=['negative', 'positive'], zero_division=True)
     print(f1)
     f1_micro = f1_score(y_test, preds, average="micro")
+    print("f1_micro=", f1_micro)
 
     with open(filename_evaluate, "w") as fd:
         json.dump({"micro_f1": f1_micro}, fd)
