@@ -4,7 +4,7 @@ split:
 
 general:
   # Possible: A, B, C, D, E
-  bank_id: E
+  bank_id: A
   # Possible: xgbclassifier, logisticregression
   train_method: xgbclassifier
 
