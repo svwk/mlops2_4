@@ -1,0 +1,27 @@
+split:
+  split_ratio: 0.3
+  random_state: 45
+
+general:
+  # Possible: A, B, C, D, E
+  bank_id: E
+  # Possible: xgbclassifier, logisticregression
+  train_method: xgbclassifier
+
+tree:
+  max_depth: 50
+  n_estimators: 200
+  eta: 0.01
+  reg_lambda: 2
+  reg_alpha: 1
+  scale_pos_weight: 9
+
+log_reg:
+  max_iter: 15
+
+neural:
+  max_depth: 1000
+  learning_rate_init: 0.005
+  verbose: true
+  hidden_layer_sizes_x: 6
+  hidden_layer_sizes_y: 2

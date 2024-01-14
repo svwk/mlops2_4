@@ -1,0 +1,130 @@
+stages:
+  fill_na:
+      cmd: python -m scripts.data_scripts.fill_na data/raw/dataset.csv
+      deps:
+        - data/raw/dataset.csv
+        - scripts/data_scripts/fill_na.py
+        - scripts/data_scripts/data_methods.py
+      outs:
+        - data/stage_fill_na/dataset.csv
+
+  data_prepare:
+    cmd: python -m scripts.data_scripts.data_prepare data/stage_fill_na/dataset.csv
+    deps:
+      - data/stage_fill_na/dataset.csv
+      - scripts/data_scripts/data_prepare.py
+      - scripts/data_scripts/data_methods.py
+      - scripts/data_scripts/fill_na.py
+    outs:
+      - data/stage_data_prepare/dataset.csv
+
+  fix_errors:
+    cmd: python -m scripts.data_scripts.fix_errors data/stage_data_prepare/dataset.csv
+    deps:
+      - data/stage_data_prepare/dataset.csv
+      - scripts/data_scripts/fix_errors.py
+      - scripts/data_scripts/data_methods.py
+      - scripts/data_scripts/utils/seniority_cats.py
+      - scripts/data_scripts/fill_na.py
+      - scripts/data_scripts/data_prepare.py
+    outs:
+      - data/stage_fix_errors/dataset.csv
+
+  create_features:
+    cmd: python -m scripts.data_scripts.create_features data/stage_fix_errors/dataset.csv
+    deps:
+    - data/stage_fix_errors/dataset.csv
+    - scripts/data_scripts/create_features.py
+    - scripts/data_scripts/data_methods.py
+    - scripts/data_scripts/utils/seniority_cats.py
+    - scripts/data_scripts/fill_na.py
+    - scripts/data_scripts/data_prepare.py
+    - scripts/data_scripts/fix_errors.py
+    outs:
+    - data/stage_create_features/dataset.csv
+
+  feature_prepare:
+    cmd: python -m scripts.data_scripts.feature_prepare ${general.bank_id} data/stage_create_features/dataset.csv
+    deps:
+      - data/stage_create_features/dataset.csv
+      - scripts/data_scripts/create_features.py
+      - scripts/data_scripts/feature_prepare.py
+      - scripts/data_scripts/fill_na.py
+      - scripts/data_scripts/data_prepare.py
+      - scripts/data_scripts/fix_errors.py
+      - scripts/data_scripts/utils/seniority_cats.py
+      - scripts/data_scripts/data_methods.py
+    outs:
+      - data/stage_feature_prepare/dataset_${general.bank_id}.csv
+      - models/scaler_${general.bank_id}.pkl
+
+  train_test_split:
+    cmd: python -m scripts.data_scripts.train_test_split ${general.bank_id} data/stage_feature_prepare/dataset_${general.bank_id}.csv
+    deps:
+    - data/stage_feature_prepare/dataset_${general.bank_id}.csv
+    - scripts/data_scripts/train_test_split.py
+    - scripts/data_scripts/feature_prepare.py
+    - scripts/data_scripts/fill_na.py
+    - scripts/data_scripts/data_prepare.py
+    - scripts/data_scripts/fix_errors.py
+    - scripts/data_scripts/utils/seniority_cats.py
+    - scripts/data_scripts/data_methods.py
+    - scripts/data_scripts/create_features.py
+    params:
+    - split.split_ratio
+    outs:
+    - data/stage_train_test_split/train_${general.bank_id}.csv
+    - data/stage_train_test_split/test_${general.bank_id}.csv
+
+  train:
+    cmd: python -m scripts.model_scripts.${general.train_method} ${general.bank_id} data/stage_train_test_split/train_${general.bank_id}.csv
+    deps:
+      - data/stage_train_test_split/train_${general.bank_id}.csv
+      - scripts/model_scripts/${general.train_method}.py
+      - scripts/model_scripts/train.py
+      - scripts/data_scripts/train_test_split.py
+      - scripts/data_scripts/feature_prepare.py
+      - scripts/data_scripts/fill_na.py
+      - scripts/data_scripts/data_prepare.py
+      - scripts/data_scripts/fix_errors.py
+      - scripts/data_scripts/utils/seniority_cats.py
+      - scripts/data_scripts/data_methods.py
+      - scripts/data_scripts/create_features.py
+    params:
+      - general.train_method
+      - tree.max_depth
+      - tree.n_estimators
+      - tree.eta
+      - tree.reg_lambda
+      - tree.reg_alpha
+      - tree.scale_pos_weight
+      - log_reg.max_iter
+      - neural.max_depth
+      - neural.learning_rate_init
+      - neural.verbose
+      - neural.hidden_layer_sizes_x
+      - neural.hidden_layer_sizes_y
+    outs:
+      - models/model_${general.train_method}_${general.bank_id}.pkl
+
+  evaluate:
+    cmd: python -m scripts.model_scripts.evaluate ${general.bank_id} data/stage_train_test_split/test_${general.bank_id}.csv model_${general.train_method}_${general.bank_id}.pkl score_${general.train_method}_${general.bank_id}.json
+    deps:
+      - data/stage_train_test_split/test_${general.bank_id}.csv
+      - models/model_${general.train_method}_${general.bank_id}.pkl
+      - scripts/model_scripts/evaluate.py
+      - scripts/model_scripts/${general.train_method}.py
+      - scripts/model_scripts/train.py
+      - scripts/data_scripts/train_test_split.py
+      - scripts/data_scripts/feature_prepare.py
+      - scripts/data_scripts/fill_na.py
+      - scripts/data_scripts/data_prepare.py
+      - scripts/data_scripts/fix_errors.py
+      - scripts/data_scripts/utils/seniority_cats.py
+      - scripts/data_scripts/data_methods.py
+      - scripts/data_scripts/create_features.py
+    params:
+      - general.train_method
+    metrics:
+      - evaluate/score_${general.train_method}_${general.bank_id}.json:
+          cache: true
