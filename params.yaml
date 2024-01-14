@@ -4,12 +4,12 @@ split:
 
 general:
   # Possible: A, B, C, D, E
-  bank_id: A
+  bank_id: B
   # Possible: xgbclassifier, logisticregression
   train_method: xgbclassifier
 
 tree:
-  max_depth: 50
+  max_depth: 20
   n_estimators: 200
   eta: 0.01
   reg_lambda: 2
